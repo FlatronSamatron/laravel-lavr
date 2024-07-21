@@ -1,0 +1,6 @@
+- composer create-project laravel/laravel:^10.0 lavr
+- php artisan serve  
+- php artisan make:controller Posts --resource  
+- env->DB_CONNECTION=sqlite
+- php artisan migrate    
+- php artisan make:model Post --migration
