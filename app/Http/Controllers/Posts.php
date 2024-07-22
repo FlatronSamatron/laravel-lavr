@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class Posts extends Controller
@@ -12,16 +13,7 @@ class Posts extends Controller
      */
     public function index()
     {
-        $posts = [
-                [
-                        'id'   => 1,
-                        'text' => 'text1',
-                ],
-                [
-                        'id'   => 1,
-                        'text' => 'text2',
-                ],
-        ];
+        $posts = Post::all();
 
         return view('posts.index', ['posts' => $posts]);
     }
@@ -31,7 +23,7 @@ class Posts extends Controller
      */
     public function create()
     {
-        //
+        return view('posts.create');
     }
 
     /**
@@ -39,7 +31,13 @@ class Posts extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+                'title' => 'required|min:5|max:255',
+                'content' => 'required|min:10|max:1000',
+        ]);
+
+        $post = Post::create($validated);
+        return redirect(route('post.show', $post->id));
     }
 
     /**
@@ -47,15 +45,16 @@ class Posts extends Controller
      */
     public function show(string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+        return view('posts.show', compact('post'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Post $post)
     {
-        //
+        dd($post);
     }
 
     /**

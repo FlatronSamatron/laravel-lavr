@@ -14,4 +14,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [Posts::class, 'index']);
+Route::get('/posts', [Posts::class, 'index'])->name('post.index');
+Route::get('/posts/create', [Posts::class, 'create'])->name('post.create');
+Route::post('/posts', [Posts::class, 'store'])->name('post.store');
+Route::get('/posts/{id}', [Posts::class, 'show'])->name('post.show');
+
