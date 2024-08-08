@@ -1,10 +1,14 @@
 <?php
 
-namespace App\Http\Requests\Car;
+namespace App\Http\Requests\Brands;
 
+use App\Models\Brand;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class UpdateRequest extends FormRequest
+use function Webmozart\Assert\Tests\StaticAnalysis\uniqueValues;
+
+class StoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +26,13 @@ class UpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-                'brand' => 'required|min:1|max:50',
-                'model' => 'required|min:1|max:50',
-                'price' => ['required', 'integer', 'multiple_of:1000'],
+            'title' => ['required', 'min:2', 'max:64', $this->titleUniqueRule()],
+            'description' => ['min:2', 'max:64']
         ];
+    }
+
+    protected function titleUniqueRule()
+    {
+        return Rule::unique(Brand::class, 'title');
     }
 }

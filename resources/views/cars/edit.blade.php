@@ -1,36 +1,27 @@
-<h1>Create Post</h1>
-
-<form method="post" action={{route('car.update', $car->id)}}>
-    @csrf
-    @method('PUT')
-    <div>
-        <label>
-            Brand:
-            <input type="text" name="brand" value={{old('brand') ?? $car->brand}}>
-        </label>
-        @error('brand')
-            <div style="color:red">{{ $message }}</div>
-        @enderror
-    </div>
-    <div>
-        <label>
-            Model:
-            <input type="text" name="model" value={{old('model') ?? $car->model}}>
-        </label>
-        @error('model')
-        <div style="color:red">{{ $message }}</div>
-        @enderror
-    </div>
-    <div>
-        <label>
-            Price:
-            <input type="number" name="price" value={{old('price') ?? $car->price}}>
-        </label>
-        @error('price')
-        <div style="color:red">{{ $message }}</div>
-        @enderror
-    </div>
-    <div>
-        <input type="submit" value="Submit">
-    </div>
-</form>
+<x-layout.main :title="'Edit car - '.$car->id">
+    <x-form action="{{route('car.update', $car->id)}}" method="put">
+        @bind($car)
+        <div class="mb-3">
+            <x-form-select name="brand_id" :options="$brands" label="Brand:" placeholder="------------"/>
+        </div>
+        <div class="mb-3">
+            <x-form-input name="model" label="Model:" />
+        </div>
+        <div class="mb-3">
+            <x-form-input name="price" label="Price:" type="number"/>
+        </div>
+        <div class="mb-3">
+            <x-form-select name="transmission" :options="$transmission" label="Transmission:" placeholder="------------"/>
+        </div>
+        <div class="mb-3">
+            <x-form-input name="vin" label="Vin:"/>
+        </div>
+        <div class="mb-3">
+            <x-form-select name="tags[]" :options="$tags" label="Select your tags:" multiple many-relation />
+        </div>
+        @endbind
+        <div class="mb-3">
+            <button class="btn btn-success" type="submit">Save</button>
+        </div>
+    </x-form>
+</x-layout.main>

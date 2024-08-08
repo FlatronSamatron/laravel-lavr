@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Posts\Save;
 use App\Models\Post;
 use Illuminate\Http\Request;
 
@@ -29,14 +30,9 @@ class Posts extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Save $request)
     {
-        $validated = $request->validate([
-                'title' => 'required|min:5|max:255',
-                'content' => 'required|min:10|max:1000',
-        ]);
-
-        $post = Post::create($validated);
+        $post = Post::create($request->validated());
         return redirect(route('post.show', $post->id));
     }
 
@@ -52,17 +48,22 @@ class Posts extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Post $post)
+    public function edit(string $id)
     {
-        dd($post);
+        $post = Post::findOrFail($id);
+        return view('posts.edit', compact('post'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Save $request, string $id)
     {
-        //
+        $post = Post::findOrFail($id);
+
+        $post->update($request->validated());
+
+        return redirect(route('post.show', $id));
     }
 
     /**

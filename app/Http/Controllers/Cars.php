@@ -2,21 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Car\StoreRequest;
-use App\Http\Requests\Car\UpdateRequest;
+use App\Enums\Cars\Status;
+use App\Http\Requests\Cars\StoreRequest;
+use App\Http\Requests\Cars\UpdateRequest;
+use App\Models\Brand;
 use App\Models\Car;
-use Illuminate\Http\Request;
+use App\Models\Tag;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class Cars extends Controller
 {
+    private array $transmission;
+
+    public function __construct()
+    {
+        $this->transmission = config('app-cars.transmissions');
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $cars = Car::all();
-        return view('cars.index', compact('cars'));
+        $transmission = $this->transmission;
+        $cars         = Car::ofActive()->with(['brand', 'tags'])->orderByDesc('created_at')->get();
+
+        return view('cars.index', compact('cars', 'transmission'));
     }
 
     /**
@@ -24,7 +36,14 @@ class Cars extends Controller
      */
     public function create()
     {
-        return view('cars.create');
+        $brands = Brand::orderBy('title')->pluck('title', 'id');
+        $tags   = Tag::orderBy('title')->pluck('title', 'id');
+
+        return view('cars.create', [
+                'transmission' => $this->transmission,
+                'brands'       => $brands,
+                'tags'       => $tags,
+        ]);
     }
 
     /**
@@ -32,8 +51,14 @@ class Cars extends Controller
      */
     public function store(StoreRequest $request)
     {
-        $car = Car::create($request->validated());
-        return redirect(route('car.show', $car->id));
+        $car = Car::make(Arr::except($request->validated(), 'tags'));
+
+        DB::transaction( function () use($request, $car) {
+            $car->save();
+            $car->tags()->sync($request['tags']);
+        });
+
+        return redirect(route('car.show', $car->id))->with('status', config('alerts.cars.created'));
     }
 
     /**
@@ -41,6 +66,8 @@ class Cars extends Controller
      */
     public function show(Car $car)
     {
+        $car['transmission'] = $this->getTransmission($car['transmission']);
+
         return view('cars.show', compact('car'));
     }
 
@@ -49,7 +76,11 @@ class Cars extends Controller
      */
     public function edit(Car $car)
     {
-        return view('cars.edit', compact('car'));
+        $transmission = $this->transmission;
+        $brands       = Brand::orderBy('title')->pluck('title', 'id');
+        $tags   = Tag::orderBy('title')->pluck('title', 'id');
+
+        return view('cars.edit', compact('car', 'transmission', 'brands', 'tags'));
     }
 
     /**
@@ -57,8 +88,10 @@ class Cars extends Controller
      */
     public function update(UpdateRequest $request, Car $car)
     {
-        $car->update($request->validated());
-        return redirect(route('car.show', $car->id));
+        $car->update(Arr::except($request->validated(), 'tags'));
+        $car->tags()->sync($request->validated('tags'));
+
+        return redirect(route('car.show', $car->id))->with('status', config('alerts.cars.edited'));
     }
 
     /**
@@ -66,7 +99,43 @@ class Cars extends Controller
      */
     public function destroy(Car $car)
     {
-        $car->delete();
-        return redirect(route('car.index'));
+        if($car->canDelete){
+            $car->delete();
+
+            return redirect(route('car.index'))->with('status', config('alerts.cars.deleted'));
+        } else {
+            return redirect(route('car.index'))->with('status', 'can\'t remove');
+        }
+    }
+
+    public function destroyDeleted($id)
+    {
+        $car = Car::onlyTrashed()->findOrFail($id);
+        $car->forceDelete();
+
+        return redirect(route('car.index'))->with('status', config('alerts.cars.trash.deleted'));
+    }
+
+    public function restoreDeleted($id)
+    {
+        $car = Car::onlyTrashed()->findOrFail($id);
+        $car->restore();
+
+        return redirect(route('car.index'))->with('status', config('alerts.cars.trash.restored'));
+    }
+
+    public function deleted()
+    {
+        $deletedCars  = Car::onlyTrashed()->get();
+        $transmission = $this->transmission;
+
+        return view('cars.deleted', compact('deletedCars', 'transmission'));
+    }
+
+    public function getTransmission(int $id)
+    {
+        $transmission = config('app-cars.transmissions');
+
+        return $transmission[$id];
     }
 }
